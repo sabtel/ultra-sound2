@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mask Radius Analyzer • Engineering Edition</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS (including aspect-ratio plugin) -->
+  <script src="https://cdn.tailwindcss.com?plugins=aspect-ratio"></script>
   <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
   <!-- Chart.js -->
@@ -94,7 +94,10 @@
     <!-- Extrema Chart -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Extrema Chart</h2>
-      <canvas id="radiusChart" class="w-full h-64"></canvas>
+      <!-- Enforce a 2:1 aspect-ratio box; Chart.js will fill it -->
+      <div class="relative w-full aspect-[2/1]">
+        <canvas id="radiusChart" class="absolute inset-0"></canvas>
+      </div>
     </section>
 
     <!-- Analysis Summary -->
@@ -234,7 +237,7 @@
           ctx.stroke();
         }
 
-        // 8) Convert raw pixel radii into millimeters at 96 DPI
+        // 8) Convert raw pixel radii into millimeters at 96 DPI
         const pxToMm     = 25.4 / 96;
         const lengthsMm  = lengths.map(r => r * pxToMm);
 
@@ -242,11 +245,11 @@
         listEl.innerHTML = '';
         lengthsMm.forEach((vMm, i) => {
           const li = document.createElement('li');
-          li.textContent = `#${i+1}: ${vMm.toFixed(2)} mm`;
+          li.textContent = `#${i+1}: ${vMm.toFixed(2)} mm`;
           listEl.appendChild(li);
         });
 
-        // 10) Compute & display mask area at 96 DPI
+        // 10) Compute & display mask area at 96 DPI
         const px2mm2   = Math.pow(pxToMm, 2);
         const areaMm2  = mask.length * px2mm2;
         document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
@@ -307,6 +310,7 @@
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
           plugins: { legend: { position: 'top' } },
           scales: {
             x: { title: { display: true, text: 'Slice' } },
