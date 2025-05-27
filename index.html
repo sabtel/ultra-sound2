@@ -193,12 +193,16 @@
         const cx = sum.x / mask.length;
         const cy = sum.y / mask.length;
 
-        // 5) Draw image onto visible canvas at exact pixel size
-        canvas.width  = width;
-        canvas.height = height;
+        // 5) Resize canvas to natural pixels × devicePixelRatio
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width  = width  * dpr;
+        canvas.height = height * dpr;
+        canvas.style.width  = width  + 'px';
+        canvas.style.height = height + 'px';
         ctx.resetTransform();
+        ctx.scale(dpr, dpr);
         ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0);
+        ctx.drawImage(img, 0, 0, width, height);
 
         // 6) Draw centroid marker
         ctx.fillStyle = '#ef4444';
@@ -230,21 +234,25 @@
           ctx.stroke();
         }
 
-        // 8) Update radius list
+        // 8) Convert raw pixel radii into millimeters at 96 DPI
+        const pxToMm     = 25.4 / 96;
+        const lengthsMm  = lengths.map(r => r * pxToMm);
+
+        // 9) Update radius list (reporting in mm now)
         listEl.innerHTML = '';
-        lengths.forEach((v, i) => {
+        lengthsMm.forEach((vMm, i) => {
           const li = document.createElement('li');
-          li.textContent = `#${i+1}: ${v.toFixed(1)} px`;
+          li.textContent = `#${i+1}: ${vMm.toFixed(2)} mm`;
           listEl.appendChild(li);
         });
 
-        // 9) Compute & display mask area at 96 DPI
-        const px2mm2   = Math.pow(25.4 / 96, 2);
+        // 10) Compute & display mask area at 96 DPI
+        const px2mm2   = Math.pow(pxToMm, 2);
         const areaMm2  = mask.length * px2mm2;
         document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
 
-        // 10) Chart & extrema counts
-        drawChart(lengths);
+        // 11) Chart & extrema counts (plot in mm)
+        drawChart(lengthsMm);
 
       } catch (err) {
         alert(err.message || 'Processing failed');
@@ -253,17 +261,17 @@
       }
     }
 
-    function drawChart(arr) {
+    function drawChart(arrMm) {
       const maxima = [], minima = [];
-      arr.forEach((v, i) => {
-        if (i > 0 && i < arr.length - 1) {
-          if (v > arr[i-1] && v > arr[i+1]) maxima.push({ x: i+1, y: v });
-          if (v < arr[i-1] && v < arr[i+1]) minima.push({ x: i+1, y: v });
+      arrMm.forEach((v, i) => {
+        if (i > 0 && i < arrMm.length - 1) {
+          if (v > arrMm[i-1] && v > arrMm[i+1]) maxima.push({ x: i+1, y: v });
+          if (v < arrMm[i-1] && v < arrMm[i+1]) minima.push({ x: i+1, y: v });
         }
       });
 
       const totalExt = maxima.length + minima.length;
-      const labels   = arr.map((_, i) => i+1);
+      const labels   = arrMm.map((_, i) => i+1);
       const ctx2     = document.getElementById('radiusChart').getContext('2d');
 
       if (radiusChart) radiusChart.destroy();
@@ -272,9 +280,29 @@
         data: {
           labels,
           datasets: [
-            { label: 'Radius', data: arr, borderColor: '#3b82f6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 },
-            { label: 'Maxima', data: maxima, type: 'scatter', pointBackgroundColor: '#10b981', pointRadius: 5 },
-            { label: 'Minima', data: minima, type: 'scatter', pointBackgroundColor: '#f59e0b', pointRadius: 5 }
+            {
+              label: 'Radius (mm)',
+              data: arrMm,
+              borderColor: '#3b82f6',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0
+            },
+            {
+              label: 'Maxima',
+              data: maxima,
+              type: 'scatter',
+              pointBackgroundColor: '#10b981',
+              pointRadius: 5
+            },
+            {
+              label: 'Minima',
+              data: minima,
+              type: 'scatter',
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 5
+            }
           ]
         },
         options: {
@@ -282,14 +310,14 @@
           plugins: { legend: { position: 'top' } },
           scales: {
             x: { title: { display: true, text: 'Slice' } },
-            y: { title: { display: true, text: 'Pixels' } }
+            y: { title: { display: true, text: 'Length (mm)' } }
           }
         }
       });
 
-      document.getElementById('maximaCount').textContent   = maxima.length;
-      document.getElementById('minimaCount').textContent   = minima.length;
-      document.getElementById('totalExtrema').textContent  = totalExt;
+      document.getElementById('maximaCount').textContent  = maxima.length;
+      document.getElementById('minimaCount').textContent  = minima.length;
+      document.getElementById('totalExtrema').textContent = totalExt;
     }
   </script>
 </body>
