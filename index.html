@@ -2,7 +2,7 @@
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Mask Radius Analyzer • Engineering Edition</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,18 +12,44 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     /* Loader Overlay */
-    #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
-    #loader.active { opacity: 1; pointer-events: auto; }
-    .spinner { border: 4px solid rgba(0,0,0,0.1); border-top-color: #3b82f6; border-radius: 50%; width: 3rem; height: 3rem; animation: spin 1s linear infinite; }
+    #loader {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #loader.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      border-top-color: #3b82f6;
+      border-radius: 50%;
+      width: 3rem;
+      height: 3rem;
+      animation: spin 1s linear infinite;
+    }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Hover pulse on summary numbers */
-    #analysisSummary span.text-3xl { transition: transform 0.3s ease, color 0.3s ease; }
-    #analysisSummary span.text-3xl:hover { transform: scale(1.1); color: #3b82f6; }
+    /* Analysis Summary hover animation */
+    #analysisSummary span.text-3xl {
+      transition: transform 0.3s ease, color 0.3s ease;
+    }
+    #analysisSummary span.text-3xl:hover {
+      transform: scale(1.1);
+      color: #3b82f6;
+    }
   </style>
 </head>
 <body class="flex flex-col min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-200">
-
   <div id="loader"><div class="spinner"></div></div>
 
   <header class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-indigo-700 dark:to-blue-700 text-white shadow">
@@ -32,7 +58,7 @@
         <i data-feather="activity" class="w-6 h-6"></i>
         <h1 class="text-2xl lg:text-3xl font-bold">Mask Radius Analyzer</h1>
       </div>
-      <button id="modeToggle" class="flex items-center space-x-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded">
+      <button id="modeToggle" class="flex items-center space-x-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition">
         <i data-feather="moon" class="w-5 h-5"></i>
         <span class="text-sm font-medium">Dark Mode</span>
       </button>
@@ -40,18 +66,18 @@
   </header>
 
   <main class="flex-grow container mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Upload -->
-    <section class="bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col items-center">
+    <!-- Upload Section -->
+    <section class="bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col items-center hover:shadow-xl transition">
       <i data-feather="upload-cloud" class="w-12 h-12 text-blue-500 mb-4"></i>
       <h2 class="text-lg font-semibold mb-2">Upload Mask Image</h2>
-      <label for="imageLoader" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">
-        <i data-feather="file" class="w-4 h-4 inline-block"></i>
+      <label for="imageLoader" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer inline-flex items-center space-x-2">
+        <i data-feather="file" class="w-4 h-4"></i>
         <span>Choose File</span>
       </label>
       <input id="imageLoader" type="file" accept="image/*" class="hidden" />
     </section>
 
-    <!-- Visual Output -->
+    <!-- Canvas Visualization -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col">
       <h2 class="text-lg font-semibold mb-4">Visual Output</h2>
       <div class="flex-grow border-4 border-dashed border-gray-300 dark:border-gray-700 rounded overflow-hidden">
@@ -68,28 +94,28 @@
     <!-- Extrema Chart -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Extrema Chart</h2>
-      <canvas id="radiusChart" width="600" height="300" class="w-full" style="height:auto;"></canvas>
+      <canvas id="radiusChart" class="w-full h-64"></canvas>
     </section>
 
     <!-- Analysis Summary -->
     <section class="lg:col-span-3 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Analysis Summary</h2>
-      <div id="analysisSummary" class="grid gap-4 md:grid-cols-4 text-gray-700 dark:text-gray-200">
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
-          <span id="maximaCount" class="text-3xl font-bold block">0</span>
-          <span>Local Maxima</span>
+      <div id="analysisSummary" class="grid gap-4 text-sm sm:text-base md:grid-cols-4 text-gray-700 dark:text-gray-200">
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
+          <span class="text-3xl font-bold" id="maximaCount">0</span>
+          <span class="mt-2">Local Maxima</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
-          <span id="minimaCount" class="text-3xl font-bold block">0</span>
-          <span>Local Minima</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
+          <span class="text-3xl font-bold" id="minimaCount">0</span>
+          <span class="mt-2">Local Minima</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
-          <span id="totalExtrema" class="text-3xl font-bold block">0</span>
-          <span>Total Extrema</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
+          <span class="text-3xl font-bold" id="totalExtrema">0</span>
+          <span class="mt-2">Total Extrema</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
-          <span id="maskArea" class="text-3xl font-bold block">0 mm²</span>
-          <span>White Mask Area</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
+          <span class="text-3xl font-bold" id="maskArea">0 mm²</span>
+          <span class="mt-2">White Mask Surface Area</span>
         </div>
       </div>
     </section>
@@ -100,24 +126,34 @@
   </footer>
 
   <script>
+    // Feather icons & dark-mode toggle
     feather.replace();
-    document.getElementById('modeToggle').onclick = () => {
-      document.documentElement.classList.toggle('dark');
-      const icon = document.documentElement.classList.contains('dark') ? 'sun' : 'moon';
+    const body = document.documentElement;
+    document.getElementById('modeToggle').addEventListener('click', () => {
+      body.classList.toggle('dark');
+      const icon = body.classList.contains('dark') ? 'sun' : 'moon';
       document.querySelector('#modeToggle i').dataset.feather = icon;
-      document.querySelector('#modeToggle span').textContent =
-        document.documentElement.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+      document.querySelector('#modeToggle span').textContent = body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
       feather.replace();
-    };
+    });
 
+    // Loader helpers
     const loader = document.getElementById('loader');
-    const showLoader = () => loader.classList.add('active');
-    const hideLoader = () => loader.classList.remove('active');
+    function showLoader() { loader.classList.add('active'); }
+    function hideLoader() { loader.classList.remove('active'); }
 
-    const input     = document.getElementById('imageLoader');
-    const listEl    = document.getElementById('radiusList');
-    const canvas    = document.getElementById('canvas');
-    const ctx       = canvas.getContext('2d');
+    // Compute px→mm based on 15" diagonal
+    // Fixed conversion using standard 96 DPI
+     const dpi = 96;
+     const pxToMm = 25.4 / dpi;
+     const pxToMm2 = pxToMm * pxToMm;
+
+
+    // Canvas & elements
+    const canvas     = document.getElementById('canvas');
+    const ctx        = canvas.getContext('2d');
+    const input      = document.getElementById('imageLoader');
+    const listEl     = document.getElementById('radiusList');
     let radiusChart;
 
     input.addEventListener('change', handleImage);
@@ -139,159 +175,133 @@
 
     function processImage(img) {
       try {
-        // 1) Offscreen canvas at natural image size
-        const off = document.createElement('canvas');
-        off.width  = img.width;
-        off.height = img.height;
-        const offCtx = off.getContext('2d');
-        offCtx.drawImage(img, 0, 0);
+        // draw image
+        canvas.width  = img.width;
+        canvas.height = img.height;
+        ctx.clearRect(0, 0, img.width, img.height);
+        ctx.drawImage(img, 0, 0);
 
-        // 2) Sample pixel data
-        const { width, height } = off;
-        const data = offCtx.getImageData(0, 0, width, height).data;
+        const { width, height } = canvas;
+        const data = ctx.getImageData(0, 0, width, height).data;
 
-        // 3) Extract white mask pixels
+        // collect mask pixels
         const mask = [];
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            const idx = 4 * (y * width + x);
-            if (data[idx] > 250 && data[idx+1] > 250 && data[idx+2] > 250) {
+            const i = (y * width + x) * 4;
+            if (data[i] > 250 && data[i+1] > 250 && data[i+2] > 250) {
               mask.push({ x, y });
             }
           }
         }
         if (!mask.length) throw new Error('No mask detected');
 
-        // 4) Compute centroid
-        const sum = mask.reduce((a,p) => ({ x: a.x + p.x, y: a.y + p.y }), { x:0, y:0 });
-        const cx = sum.x / mask.length;
-        const cy = sum.y / mask.length;
+        // compute centroid
+        const sum = mask.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
+        const cx = sum.x / mask.length, cy = sum.y / mask.length;
 
-        // 5) Resize canvas with DPR scaling
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width  = width  * dpr;
-        canvas.height = height * dpr;
-        canvas.style.width  = width  + 'px';
-        canvas.style.height = height + 'px';
-        ctx.resetTransform();
-        ctx.scale(dpr, dpr);
-        ctx.clearRect(0, 0, width, height);
-        ctx.drawImage(img, 0, 0, width, height);
-
-        // 6) Draw centroid marker
+        // draw centroid
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
         ctx.fill();
 
-        // 7) Compute radial lengths, draw rays and labels
-        const slices  = 72;
-        const lengths = Array(slices).fill(0);
-        const pxToMm  = 25.4 / 96;
-        ctx.strokeStyle = '#3b82f6';
-        ctx.lineWidth   = 1.5;
-        ctx.font        = '10px sans-serif';
-        ctx.fillStyle   = '#000';
+        // extract edge pixels
+        const inside = new Set(mask.map(p => p.y * width + p.x));
+        const edges  = mask.filter(({ x, y }) => {
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              if (dx === 0 && dy === 0) continue;
+              const nx = x + dx, ny = y + dy;
+              if (nx < 0 || ny < 0 || nx >= width || ny >= height) return true;
+              if (!inside.has(ny * width + nx)) return true;
+            }
+          }
+          return false;
+        });
+
+        // radial sampling via edge projection
+        const slices    = 72;
+        const angleStep = 2 * Math.PI / slices;
+        const lengthsPx = new Array(slices).fill(0);
 
         for (let i = 0; i < slices; i++) {
-          const theta = (i / slices) * 2 * Math.PI;
-          let r = 0;
-          while (r < Math.max(width, height)) {
-            const xx = Math.round(cx + r * Math.cos(theta));
-            const yy = Math.round(cy + r * Math.sin(theta));
-            if (xx < 0 || yy < 0 || xx >= width || yy >= height) break;
-            const id = 4 * (yy * width + xx);
-            if (!(data[id] > 250 && data[id+1] > 250 && data[id+2] > 250)) break;
-            r++;
-          }
-          lengths[i] = r;
+          const θ    = i * angleStep;
+          const cosT = Math.cos(θ), sinT = Math.sin(θ);
+          let bestR  = 0;
 
-          // Draw ray
+          for (const p of edges) {
+            const dx = p.x - cx, dy = p.y - cy;
+            const proj = dx * cosT + dy * sinT;
+            if (proj <= 0) continue;
+            const perp = Math.abs(-sinT * dx + cosT * dy);
+            if (perp > Math.tan(angleStep / 2) * proj) continue;
+            if (proj > bestR) bestR = proj;
+          }
+
+          lengthsPx[i] = bestR;
+
+          // draw ray
+          ctx.strokeStyle = '#3b82f6';
+          ctx.lineWidth   = 1.5;
           ctx.beginPath();
           ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + r * Math.cos(theta), cy + r * Math.sin(theta));
+          ctx.lineTo(cx + bestR * cosT, cy + bestR * sinT);
           ctx.stroke();
-
-          // Draw length label just outside mask edge
-          const mm = (r * pxToMm).toFixed(2) + ' mm';
-          const labelX = cx + (r + 5) * Math.cos(theta);
-          const labelY = cy + (r + 5) * Math.sin(theta);
-          ctx.fillText(mm, labelX, labelY);
         }
 
-        // 8) Update radius list in mm
+        // update radius list
         listEl.innerHTML = '';
-        lengths.forEach((r, i) => {
+        lengthsPx.forEach((px, i) => {
+          const mm = (px * pxToMm).toFixed(1);
           const li = document.createElement('li');
-          const mm = (r * pxToMm).toFixed(2);
-          li.textContent = `#${i+1}: ${mm} mm`;
+          li.textContent = `#${i+1}: ${px.toFixed(2)} px (${mm} mm)`;
           listEl.appendChild(li);
         });
 
-        // 9) Compute and show mask area
-        const px2mm2   = pxToMm * pxToMm;
-        const areaMm2  = mask.length * px2mm2;
+        // compute and display mask area
+        const areaMm2 = mask.length * pxToMm2;
         document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
 
-        // 10) Draw chart of lengths
-        drawChart(lengths.map(r => r * pxToMm));
+        // draw chart & summary
+        drawChart(lengthsPx);
+
       } catch (err) {
-        alert(err.message || 'Processing failed');
+        alert(err.message);
       } finally {
         hideLoader();
       }
     }
 
-    function drawChart(arrMm) {
+    function drawChart(lengthsPx) {
+      const lengthsMm = lengthsPx.map(r => r * pxToMm);
       const maxima = [], minima = [];
-      arrMm.forEach((v, i) => {
-        if (i > 0 && i < arrMm.length - 1) {
-          if (v > arrMm[i-1] && v > arrMm[i+1]) maxima.push({ x: i+1, y: v });
-          if (v < arrMm[i-1] && v < arrMm[i+1]) minima.push({ x: i+1, y: v });
+      lengthsMm.forEach((v, i) => {
+        if (i > 0 && i < lengthsMm.length - 1) {
+          if (v > lengthsMm[i-1] && v > lengthsMm[i+1]) maxima.push({ x: i+1, y: v });
+          if (v < lengthsMm[i-1] && v < lengthsMm[i+1]) minima.push({ x: i+1, y: v });
         }
       });
-
       const totalExt = maxima.length + minima.length;
-      const ctx2     = document.getElementById('radiusChart').getContext('2d');
+
+      const ctx2 = document.getElementById('radiusChart').getContext('2d');
       if (radiusChart) radiusChart.destroy();
       radiusChart = new Chart(ctx2, {
         type: 'line',
         data: {
-          labels: arrMm.map((_, i) => i+1),
+          labels: lengthsMm.map((_, i) => i+1),
           datasets: [
-            {
-              label: 'Radius (mm)',
-              data: arrMm,
-              borderColor: '#3b82f6',
-              borderWidth: 2,
-              fill: false,
-              tension: 0.4,
-              pointRadius: 0
-            },
-            {
-              label: 'Maxima',
-              data: maxima,
-              type: 'scatter',
-              pointBackgroundColor: '#10b981',
-              pointRadius: 5
-            },
-            {
-              label: 'Minima',
-              data: minima,
-              type: 'scatter',
-              pointBackgroundColor: '#f59e0b',
-              pointRadius: 5
-            }
+            { label: 'Radius (mm)', data: lengthsMm, borderColor: '#3b82f6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 },
+            { label: 'Maxima',   data: maxima,   type: 'scatter', pointBackgroundColor: '#10b981', pointRadius: 5 },
+            { label: 'Minima',   data: minima,   type: 'scatter', pointBackgroundColor: '#f59e0b', pointRadius: 5 }
           ]
         },
         options: {
           responsive: true,
-          maintainAspectRatio: true,
-          aspectRatio: 2,
           plugins: { legend: { position: 'top' } },
           scales: {
             x: { title: { display: true, text: 'Slice' } },
-            y: { title: { display: true, text: 'Length (mm)' } }
+            y: { title: { display: true, text: 'Millimeters (mm)' } }
           }
         }
       });
