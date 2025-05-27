@@ -2,7 +2,7 @@
 <html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mask Radius Analyzer • Engineering Edition</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -13,16 +13,11 @@
   <style>
     /* Loader Overlay */
     #loader {
-      position: fixed;
-      inset: 0;
-      background-color: rgba(255,255,255,0.8);
+      position: fixed; inset: 0;
+      background: rgba(255,255,255,0.8);
       backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      opacity: 0;
-      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; opacity: 0; pointer-events: none;
       transition: opacity 0.3s ease;
     }
     #loader.active { opacity: 1; pointer-events: auto; }
@@ -46,6 +41,7 @@
   </style>
 </head>
 <body class="flex flex-col min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-200">
+
   <div id="loader"><div class="spinner"></div></div>
 
   <header class="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-indigo-700 dark:to-blue-700 text-white shadow">
@@ -54,7 +50,7 @@
         <i data-feather="activity" class="w-6 h-6"></i>
         <h1 class="text-2xl lg:text-3xl font-bold">Mask Radius Analyzer</h1>
       </div>
-      <button id="modeToggle" class="flex items-center space-x-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded transition">
+      <button id="modeToggle" class="flex items-center space-x-1 bg-white/20 hover:bg-white/30 px-3 py-1 rounded">
         <i data-feather="moon" class="w-5 h-5"></i>
         <span class="text-sm font-medium">Dark Mode</span>
       </button>
@@ -62,18 +58,19 @@
   </header>
 
   <main class="flex-grow container mx-auto p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
-    <!-- Upload Section -->
-    <section class="bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col items-center hover:shadow-xl transition">
+
+    <!-- Upload -->
+    <section class="bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col items-center">
       <i data-feather="upload-cloud" class="w-12 h-12 text-blue-500 mb-4"></i>
       <h2 class="text-lg font-semibold mb-2">Upload Mask Image</h2>
-      <label for="imageLoader" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer inline-flex items-center space-x-2">
-        <i data-feather="file" class="w-4 h-4"></i>
+      <label for="imageLoader" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded cursor-pointer">
+        <i data-feather="file" class="w-4 h-4 inline-block"></i>
         <span>Choose File</span>
       </label>
       <input id="imageLoader" type="file" accept="image/*" class="hidden" />
     </section>
 
-    <!-- Canvas Visualization -->
+    <!-- Visual Output -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col">
       <h2 class="text-lg font-semibold mb-4">Visual Output</h2>
       <div class="flex-grow border-4 border-dashed border-gray-300 dark:border-gray-700 rounded overflow-hidden">
@@ -90,38 +87,33 @@
     <!-- Extrema Chart -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Extrema Chart</h2>
-      <!-- fixed drawing size 600×300, scales in CSS but keeps 2:1 -->
-      <canvas
-        id="radiusChart"
-        width="600"
-        height="300"
-        class="w-full"
-        style="height: auto;"
-      ></canvas>
+      <!-- fixed 600×300 drawing surface; CSS scales uniformly -->
+      <canvas id="radiusChart" width="600" height="300" class="w-full" style="height:auto;"></canvas>
     </section>
 
     <!-- Analysis Summary -->
     <section class="lg:col-span-3 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Analysis Summary</h2>
-      <div id="analysisSummary" class="grid gap-4 text-sm sm:text-base md:grid-cols-4 text-gray-700 dark:text-gray-200">
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
-          <span id="maximaCount" class="text-3xl font-bold">0</span>
-          <span class="mt-2">Local Maxima</span>
+      <div id="analysisSummary" class="grid gap-4 md:grid-cols-4 text-gray-700 dark:text-gray-200">
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
+          <span id="maximaCount" class="text-3xl font-bold block">0</span>
+          <span>Local Maxima</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
-          <span id="minimaCount" class="text-3xl font-bold">0</span>
-          <span class="mt-2">Local Minima</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
+          <span id="minimaCount" class="text-3xl font-bold block">0</span>
+          <span>Local Minima</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
-          <span id="totalExtrema" class="text-3xl font-bold">0</span>
-          <span class="mt-2">Total Extrema</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
+          <span id="totalExtrema" class="text-3xl font-bold block">0</span>
+          <span>Total Extrema</span>
         </div>
-        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
-          <span id="maskArea" class="text-3xl font-bold">0 mm²</span>
-          <span class="mt-2">White Mask Surface Area</span>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow text-center">
+          <span id="maskArea" class="text-3xl font-bold block">0 mm²</span>
+          <span>White Mask Area</span>
         </div>
       </div>
     </section>
+
   </main>
 
   <footer class="text-center py-4 text-sm text-gray-600 dark:text-gray-400">
@@ -130,24 +122,23 @@
 
   <script>
     feather.replace();
-    const body = document.documentElement;
-    document.getElementById('modeToggle').addEventListener('click', () => {
-      body.classList.toggle('dark');
-      const icon = body.classList.contains('dark') ? 'sun' : 'moon';
+    document.getElementById('modeToggle').onclick = () => {
+      document.documentElement.classList.toggle('dark');
+      const icon = document.documentElement.classList.contains('dark') ? 'sun' : 'moon';
       document.querySelector('#modeToggle i').dataset.feather = icon;
       document.querySelector('#modeToggle span').textContent =
-        body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
+        document.documentElement.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
       feather.replace();
-    });
+    };
 
     const loader = document.getElementById('loader');
-    function showLoader() { loader.classList.add('active'); }
-    function hideLoader() { loader.classList.remove('active'); }
+    const showLoader = () => loader.classList.add('active');
+    const hideLoader = () => loader.classList.remove('active');
 
-    const canvas = document.getElementById('canvas');
-    const ctx    = canvas.getContext('2d');
     const input  = document.getElementById('imageLoader');
     const listEl = document.getElementById('radiusList');
+    const canvas = document.getElementById('canvas');
+    const ctx    = canvas.getContext('2d');
     let radiusChart;
 
     input.addEventListener('change', handleImage);
@@ -169,35 +160,32 @@
 
     function processImage(img) {
       try {
-        // 1) Offscreen canvas at natural image size
+        // 1) Offscreen canvas at natural resolution
         const off = document.createElement('canvas');
         off.width  = img.width;
         off.height = img.height;
         const offCtx = off.getContext('2d');
         offCtx.drawImage(img, 0, 0);
 
-        // 2) Sample pixel data
+        // 2) Extract mask pixels from offscreen data
         const { width, height } = off;
         const data = offCtx.getImageData(0, 0, width, height).data;
-
-        // 3) Extract white mask pixels
         const mask = [];
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            const idx = 4 * (y * width + x);
-            if (data[idx] > 250 && data[idx+1] > 250 && data[idx+2] > 250) {
+            const i = 4 * (y * width + x);
+            if (data[i] > 250 && data[i+1] > 250 && data[i+2] > 250) {
               mask.push({ x, y });
             }
           }
         }
         if (!mask.length) throw new Error('No mask detected');
 
-        // 4) Compute centroid
-        const sum = mask.reduce((a,p) => ({ x: a.x + p.x, y: a.y + p.y }), { x:0, y:0 });
-        const cx = sum.x / mask.length;
-        const cy = sum.y / mask.length;
+        // 3) Centroid
+        const sum = mask.reduce((a,p) => ({ x: a.x + p.x, y: a.y + p.y }), { x:0,y:0 });
+        const cx = sum.x / mask.length, cy = sum.y / mask.length;
 
-        // 5) Resize canvas 1:1 to image size (no DPR scaling)
+        // 4) Draw original on onscreen canvas (1:1)
         canvas.width  = width;
         canvas.height = height;
         canvas.style.width  = width + 'px';
@@ -205,59 +193,59 @@
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 6) Draw centroid marker
+        // 5) Draw centroid marker
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
-        ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+        ctx.arc(cx, cy, 6, 0, 2*Math.PI);
         ctx.fill();
 
-        // 7) Compute radial lengths & draw rays
-        const slices  = 72;
-        const lengths = Array(slices).fill(0);
+        // 6) Radial lengths & rays
+        const slices = 72;
+        const lengths = new Array(slices).fill(0);
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth   = 1.5;
-
         for (let i = 0; i < slices; i++) {
-          const theta = (i / slices) * 2 * Math.PI;
+          const θ = (i / slices) * 2*Math.PI;
           let r = 0;
           while (r < Math.max(width, height)) {
-            const xx = Math.round(cx + r * Math.cos(theta));
-            const yy = Math.round(cy + r * Math.sin(theta));
-            if (xx < 0 || yy < 0 || xx >= width || yy >= height) break;
-            const id = 4 * (yy * width + xx);
-            if (!(data[id] > 250 && data[id+1] > 250 && data[id+2] > 250)) break;
+            const xx = Math.round(cx + r*Math.cos(θ));
+            const yy = Math.round(cy + r*Math.sin(θ));
+            if (xx<0||yy<0||xx>=width||yy>=height) break;
+            const idx = 4*(yy*width+xx);
+            if (!(data[idx]>250 && data[idx+1]>250 && data[idx+2]>250)) break;
             r++;
           }
           lengths[i] = r;
           ctx.beginPath();
           ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + r * Math.cos(theta), cy + r * Math.sin(theta));
+          ctx.lineTo(cx + r*Math.cos(θ), cy + r*Math.sin(θ));
           ctx.stroke();
         }
 
-        // 8) Convert raw pixel radii into millimeters at fixed 96 DPI
-        const pxToMm    = 25.4 / 96;
+        // 7) Convert px→mm at fixed 96 DPI
+        const pxToMm = 25.4 / 96;
         const lengthsMm = lengths.map(r => r * pxToMm);
 
-        // 9) Update radius list (reporting in mm)
+        // 8) Update list
         listEl.innerHTML = '';
-        lengthsMm.forEach((vMm, i) => {
+        lengthsMm.forEach((v, i) => {
           const li = document.createElement('li');
-          li.textContent = `#${i+1}: ${vMm.toFixed(2)} mm`;
+          li.textContent = `#${i+1}: ${v.toFixed(2)} mm`;
           listEl.appendChild(li);
         });
 
-        // 10) Compute & display mask area at fixed 96 DPI
-        const px2mm2  = pxToMm * pxToMm;
+        // 9) Compute mask area
+        const px2mm2 = pxToMm * pxToMm;
         const areaMm2 = mask.length * px2mm2;
         document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
 
-        // 11) Chart & extrema counts (plot in mm)
+        // 10) Draw chart
         drawChart(lengthsMm);
-
-      } catch (err) {
+      }
+      catch (err) {
         alert(err.message || 'Processing failed');
-      } finally {
+      }
+      finally {
         hideLoader();
       }
     }
@@ -265,21 +253,20 @@
     function drawChart(arrMm) {
       const maxima = [], minima = [];
       arrMm.forEach((v, i) => {
-        if (i > 0 && i < arrMm.length - 1) {
-          if (v > arrMm[i-1] && v > arrMm[i+1]) maxima.push({ x: i+1, y: v });
-          if (v < arrMm[i-1] && v < arrMm[i+1]) minima.push({ x: i+1, y: v });
+        if (i>0 && i<arrMm.length-1) {
+          if (v > arrMm[i-1] && v > arrMm[i+1]) maxima.push({ x:i+1, y:v });
+          if (v < arrMm[i-1] && v < arrMm[i+1]) minima.push({ x:i+1, y:v });
         }
       });
 
-      const totalExt = maxima.length + minima.length;
-      const labels   = arrMm.map((_, i) => i+1);
-      const ctx2     = document.getElementById('radiusChart').getContext('2d');
-
+      const total = maxima.length + minima.length;
+      const ctx2 = document.getElementById('radiusChart').getContext('2d');
       if (radiusChart) radiusChart.destroy();
+
       radiusChart = new Chart(ctx2, {
         type: 'line',
         data: {
-          labels,
+          labels: arrMm.map((_,i) => i+1),
           datasets: [
             {
               label: 'Radius (mm)',
@@ -320,7 +307,7 @@
 
       document.getElementById('maximaCount').textContent  = maxima.length;
       document.getElementById('minimaCount').textContent  = minima.length;
-      document.getElementById('totalExtrema').textContent = totalExt;
+      document.getElementById('totalExtrema').textContent = total;
     }
   </script>
 </body>
