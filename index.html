@@ -4,27 +4,22 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Mask Radius Analyzer • Engineering Edition</title>
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Feather Icons -->
   <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    /* Loader */
-    #loader { position: fixed; inset:0; background:rgba(255,255,255,0.8);
-      backdrop-filter:blur(4px); display:flex; align-items:center;
-      justify-content:center; z-index:50; opacity:0; pointer-events:none;
-      transition:opacity .3s ease; }
-    #loader.active { opacity:1; pointer-events:auto; }
-    .spinner { border:4px solid rgba(0,0,0,0.1); border-top-color:#3b82f6;
-      border-radius:50%; width:3rem; height:3rem; animation:spin 1s linear infinite; }
-    @keyframes spin{to{transform:rotate(360deg);}}
+    /* Loader Overlay */
+    #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    #loader.active { opacity: 1; pointer-events: auto; }
+    .spinner { border: 4px solid rgba(0,0,0,0.1); border-top-color: #3b82f6; border-radius: 50%; width: 3rem; height: 3rem; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Hover */
-    #analysisSummary span.text-3xl {
-      transition:transform .3s ease,color .3s ease;
-    }
-    #analysisSummary span.text-3xl:hover {
-      transform:scale(1.1); color:#3b82f6;
-    }
+    /* Hover pulse on summary numbers */
+    #analysisSummary span.text-3xl { transition: transform 0.3s ease, color 0.3s ease; }
+    #analysisSummary span.text-3xl:hover { transform: scale(1.1); color: #3b82f6; }
   </style>
 </head>
 <body class="flex flex-col min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 text-gray-800 dark:text-gray-200">
@@ -56,7 +51,7 @@
       <input id="imageLoader" type="file" accept="image/*" class="hidden" />
     </section>
 
-    <!-- Canvas -->
+    <!-- Visual Output -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6 flex flex-col">
       <h2 class="text-lg font-semibold mb-4">Visual Output</h2>
       <div class="flex-grow border-4 border-dashed border-gray-300 dark:border-gray-700 rounded overflow-hidden">
@@ -64,19 +59,19 @@
       </div>
     </section>
 
-    <!-- Radii List -->
+    <!-- Radius List -->
     <section class="bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Radius Lengths</h2>
       <ol id="radiusList" class="list-decimal list-inside space-y-1 text-sm max-h-48 overflow-y-auto"></ol>
     </section>
 
-    <!-- Chart -->
+    <!-- Extrema Chart -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Extrema Chart</h2>
       <canvas id="radiusChart" width="600" height="300" class="w-full" style="height:auto;"></canvas>
     </section>
 
-    <!-- Summary -->
+    <!-- Analysis Summary -->
     <section class="lg:col-span-3 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Analysis Summary</h2>
       <div id="analysisSummary" class="grid gap-4 md:grid-cols-4 text-gray-700 dark:text-gray-200">
@@ -144,34 +139,35 @@
 
     function processImage(img) {
       try {
-        // 1) Offscreen at natural size
+        // 1) Offscreen canvas at natural image size
         const off = document.createElement('canvas');
         off.width  = img.width;
         off.height = img.height;
         const offCtx = off.getContext('2d');
         offCtx.drawImage(img, 0, 0);
 
-        // 2) Get raw pixel data
+        // 2) Sample pixel data
         const { width, height } = off;
         const data = offCtx.getImageData(0, 0, width, height).data;
 
-        // 3) Build mask
+        // 3) Extract white mask pixels
         const mask = [];
         for (let y = 0; y < height; y++) {
           for (let x = 0; x < width; x++) {
-            const i = 4 * (y * width + x);
-            if (data[i] > 250 && data[i+1] > 250 && data[i+2] > 250) {
+            const idx = 4 * (y * width + x);
+            if (data[idx] > 250 && data[idx+1] > 250 && data[idx+2] > 250) {
               mask.push({ x, y });
             }
           }
         }
         if (!mask.length) throw new Error('No mask detected');
 
-        // 4) Centroid
+        // 4) Compute centroid
         const sum = mask.reduce((a,p) => ({ x: a.x + p.x, y: a.y + p.y }), { x:0, y:0 });
-        const cx = sum.x / mask.length, cy = sum.y / mask.length;
+        const cx = sum.x / mask.length;
+        const cy = sum.y / mask.length;
 
-        // 5) Onscreen canvas 1px→dpr physical px
+        // 5) Resize canvas with DPR scaling
         const dpr = window.devicePixelRatio || 1;
         canvas.width  = width  * dpr;
         canvas.height = height * dpr;
@@ -182,59 +178,66 @@
         ctx.clearRect(0, 0, width, height);
         ctx.drawImage(img, 0, 0, width, height);
 
-        // 6) Draw centroid
+        // 6) Draw centroid marker
         ctx.fillStyle = '#ef4444';
         ctx.beginPath();
         ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
         ctx.fill();
 
-        // 7) Compute & draw radii from offscreen data
-        const slices = 72;
-        const lengths = new Array(slices).fill(0);
+        // 7) Compute radial lengths, draw rays and labels
+        const slices  = 72;
+        const lengths = Array(slices).fill(0);
+        const pxToMm  = 25.4 / 96;
         ctx.strokeStyle = '#3b82f6';
         ctx.lineWidth   = 1.5;
+        ctx.font        = '10px sans-serif';
+        ctx.fillStyle   = '#000';
+
         for (let i = 0; i < slices; i++) {
-          const θ = (i / slices) * 2 * Math.PI;
+          const theta = (i / slices) * 2 * Math.PI;
           let r = 0;
           while (r < Math.max(width, height)) {
-            const xx = Math.round(cx + r * Math.cos(θ));
-            const yy = Math.round(cy + r * Math.sin(θ));
+            const xx = Math.round(cx + r * Math.cos(theta));
+            const yy = Math.round(cy + r * Math.sin(theta));
             if (xx < 0 || yy < 0 || xx >= width || yy >= height) break;
-            const idx = 4 * (yy * width + xx);
-            if (!(data[idx] > 250 && data[idx+1] > 250 && data[idx+2] > 250)) break;
+            const id = 4 * (yy * width + xx);
+            if (!(data[id] > 250 && data[id+1] > 250 && data[id+2] > 250)) break;
             r++;
           }
           lengths[i] = r;
+
+          // Draw ray
           ctx.beginPath();
           ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + r * Math.cos(θ), cy + r * Math.sin(θ));
+          ctx.lineTo(cx + r * Math.cos(theta), cy + r * Math.sin(theta));
           ctx.stroke();
+
+          // Draw length label just outside mask edge
+          const mm = (r * pxToMm).toFixed(2) + ' mm';
+          const labelX = cx + (r + 5) * Math.cos(theta);
+          const labelY = cy + (r + 5) * Math.sin(theta);
+          ctx.fillText(mm, labelX, labelY);
         }
 
-        // 8) Convert px→mm at fixed 96 DPI
-        const pxToMm = 25.4 / 96;
-        const lengthsMm = lengths.map(r => r * pxToMm);
-
-        // 9) Update list
+        // 8) Update radius list in mm
         listEl.innerHTML = '';
-        lengthsMm.forEach((v, i) => {
+        lengths.forEach((r, i) => {
           const li = document.createElement('li');
-          li.textContent = `#${i+1}: ${v.toFixed(2)} mm`;
+          const mm = (r * pxToMm).toFixed(2);
+          li.textContent = `#${i+1}: ${mm} mm`;
           listEl.appendChild(li);
         });
 
-        // 10) Mask area
-        const px2mm2 = pxToMm * pxToMm;
-        const areaMm2 = mask.length * px2mm2;
+        // 9) Compute and show mask area
+        const px2mm2   = pxToMm * pxToMm;
+        const areaMm2  = mask.length * px2mm2;
         document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
 
-        // 11) Draw chart
-        drawChart(lengthsMm);
-      }
-      catch (err) {
+        // 10) Draw chart of lengths
+        drawChart(lengths.map(r => r * pxToMm));
+      } catch (err) {
         alert(err.message || 'Processing failed');
-      }
-      finally {
+      } finally {
         hideLoader();
       }
     }
@@ -248,17 +251,37 @@
         }
       });
 
-      const total = maxima.length + minima.length;
-      const ctx2 = document.getElementById('radiusChart').getContext('2d');
+      const totalExt = maxima.length + minima.length;
+      const ctx2     = document.getElementById('radiusChart').getContext('2d');
       if (radiusChart) radiusChart.destroy();
       radiusChart = new Chart(ctx2, {
         type: 'line',
         data: {
-          labels: arrMm.map((_,i) => i+1),
+          labels: arrMm.map((_, i) => i+1),
           datasets: [
-            { label: 'Radius (mm)', data: arrMm, borderColor: '#3b82f6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 },
-            { label: 'Maxima', data: maxima, type: 'scatter', pointBackgroundColor: '#10b981', pointRadius: 5 },
-            { label: 'Minima', data: minima, type: 'scatter', pointBackgroundColor: '#f59e0b', pointRadius: 5 }
+            {
+              label: 'Radius (mm)',
+              data: arrMm,
+              borderColor: '#3b82f6',
+              borderWidth: 2,
+              fill: false,
+              tension: 0.4,
+              pointRadius: 0
+            },
+            {
+              label: 'Maxima',
+              data: maxima,
+              type: 'scatter',
+              pointBackgroundColor: '#10b981',
+              pointRadius: 5
+            },
+            {
+              label: 'Minima',
+              data: minima,
+              type: 'scatter',
+              pointBackgroundColor: '#f59e0b',
+              pointRadius: 5
+            }
           ]
         },
         options: {
@@ -275,7 +298,7 @@
 
       document.getElementById('maximaCount').textContent  = maxima.length;
       document.getElementById('minimaCount').textContent  = minima.length;
-      document.getElementById('totalExtrema').textContent = total;
+      document.getElementById('totalExtrema').textContent = totalExt;
     }
   </script>
 </body>
