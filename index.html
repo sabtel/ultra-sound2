@@ -10,42 +10,34 @@
   <script src="https://unpkg.com/feather-icons"></script>
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Chart.js Annotation Plugin -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.3.1"></script>
   <style>
     /* Loader Overlay */
     #loader {
       position: fixed;
       inset: 0;
-      background-color: rgba(255, 255, 255, 0.8);
+      background-color: rgba(255,255,255,0.8);
       backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 50;
-      opacity: 0;
-      pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 50; opacity: 0; pointer-events: none;
       transition: opacity 0.3s ease;
     }
-    #loader.active {
-      opacity: 1;
-      pointer-events: auto;
-    }
+    #loader.active { opacity: 1; pointer-events: auto; }
     .spinner {
-      border: 4px solid rgba(0, 0, 0, 0.1);
+      border: 4px solid rgba(0,0,0,0.1);
       border-top-color: #3b82f6;
       border-radius: 50%;
-      width: 3rem;
-      height: 3rem;
+      width: 3rem; height: 3rem;
       animation: spin 1s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Analysis Summary hover animation */
+    /* Summary hover animation */
     #analysisSummary span.text-3xl {
       transition: transform 0.3s ease, color 0.3s ease;
     }
     #analysisSummary span.text-3xl:hover {
-      transform: scale(1.1);
-      color: #3b82f6;
+      transform: scale(1.1); color: #3b82f6;
     }
   </style>
 </head>
@@ -94,16 +86,22 @@
     <!-- Extrema Chart -->
     <section class="lg:col-span-2 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Extrema Chart</h2>
-      <canvas id="radiusChart" class="w-full h-64"></canvas>
+      <div style="height: 500px;">
+        <canvas id="radiusChart"></canvas>
+      </div>
     </section>
 
     <!-- Analysis Summary -->
     <section class="lg:col-span-3 bg-white dark:bg-gray-800 shadow-lg rounded p-6">
       <h2 class="text-lg font-semibold mb-4">Analysis Summary</h2>
-      <div id="analysisSummary" class="grid gap-4 text-sm sm:text-base md:grid-cols-4 text-gray-700 dark:text-gray-200">
+      <div id="analysisSummary" class="grid gap-4 text-sm sm:text-base md:grid-cols-5 text-gray-700 dark:text-gray-200">
         <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
           <span class="text-3xl font-bold" id="maximaCount">0</span>
           <span class="mt-2">Local Maxima</span>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
+          <span class="text-3xl font-bold" id="sharpCount">0</span>
+          <span class="mt-2">Sharp Spikes</span>
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
           <span class="text-3xl font-bold" id="minimaCount">0</span>
@@ -115,7 +113,7 @@
         </div>
         <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded shadow flex flex-col items-center">
           <span class="text-3xl font-bold" id="maskArea">0 mm²</span>
-          <span class="mt-2">White Mask Surface Area</span>
+          <span class="mt-2">White Mask Area</span>
         </div>
       </div>
     </section>
@@ -126,34 +124,27 @@
   </footer>
 
   <script>
-    // Feather icons & dark-mode toggle
+    // Feather Icons & Dark Mode Toggle
     feather.replace();
     const body = document.documentElement;
     document.getElementById('modeToggle').addEventListener('click', () => {
       body.classList.toggle('dark');
-      const icon = body.classList.contains('dark') ? 'sun' : 'moon';
-      document.querySelector('#modeToggle i').dataset.feather = icon;
+      document.querySelector('#modeToggle i').dataset.feather = body.classList.contains('dark') ? 'sun' : 'moon';
       document.querySelector('#modeToggle span').textContent = body.classList.contains('dark') ? 'Light Mode' : 'Dark Mode';
       feather.replace();
     });
 
-    // Loader helpers
+    // Loader Helpers
     const loader = document.getElementById('loader');
     function showLoader() { loader.classList.add('active'); }
     function hideLoader() { loader.classList.remove('active'); }
 
-    // Compute px→mm based on 15" diagonal
-    // Fixed conversion using standard 96 DPI
-     const dpi = 96;
-     const pxToMm = 25.4 / dpi;
-     const pxToMm2 = pxToMm * pxToMm;
+    // Conversion px→mm (96 DPI)
+    const dpi = 96, pxToMm = 25.4 / dpi, pxToMm2 = pxToMm * pxToMm;
 
-
-    // Canvas & elements
-    const canvas     = document.getElementById('canvas');
-    const ctx        = canvas.getContext('2d');
-    const input      = document.getElementById('imageLoader');
-    const listEl     = document.getElementById('radiusList');
+    // DOM Elements
+    const canvas = document.getElementById('canvas'), ctx = canvas.getContext('2d');
+    const input  = document.getElementById('imageLoader'), listEl = document.getElementById('radiusList');
     let radiusChart;
 
     input.addEventListener('change', handleImage);
@@ -175,97 +166,75 @@
 
     function processImage(img) {
       try {
-        // draw image
-        canvas.width  = img.width;
+        canvas.width = img.width;
         canvas.height = img.height;
-        ctx.clearRect(0, 0, img.width, img.height);
-        ctx.drawImage(img, 0, 0);
+        ctx.clearRect(0,0,img.width,img.height);
+        ctx.drawImage(img,0,0);
 
+        // Collect mask pixels
         const { width, height } = canvas;
-        const data = ctx.getImageData(0, 0, width, height).data;
-
-        // collect mask pixels
+        const data = ctx.getImageData(0,0,width,height).data;
         const mask = [];
-        for (let y = 0; y < height; y++) {
-          for (let x = 0; x < width; x++) {
-            const i = (y * width + x) * 4;
-            if (data[i] > 250 && data[i+1] > 250 && data[i+2] > 250) {
-              mask.push({ x, y });
-            }
+        for (let y=0; y<height; y++) {
+          for (let x=0; x<width; x++) {
+            const i = (y*width + x)*4;
+            if (data[i]>250 && data[i+1]>250 && data[i+2]>250) mask.push({x,y});
           }
         }
         if (!mask.length) throw new Error('No mask detected');
 
-        // compute centroid
-        const sum = mask.reduce((a, p) => ({ x: a.x + p.x, y: a.y + p.y }), { x: 0, y: 0 });
-        const cx = sum.x / mask.length, cy = sum.y / mask.length;
+        // Centroid
+        const sum = mask.reduce((a,p)=>({x:a.x+p.x, y:a.y+p.y}), {x:0,y:0});
+        const cx = sum.x/mask.length, cy = sum.y/mask.length;
+        ctx.fillStyle='#ef4444';
+        ctx.beginPath(); ctx.arc(cx,cy,6,0,2*Math.PI); ctx.fill();
 
-        // draw centroid
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
-        ctx.fill();
-
-        // extract edge pixels
-        const inside = new Set(mask.map(p => p.y * width + p.x));
-        const edges  = mask.filter(({ x, y }) => {
-          for (let dy = -1; dy <= 1; dy++) {
-            for (let dx = -1; dx <= 1; dx++) {
-              if (dx === 0 && dy === 0) continue;
-              const nx = x + dx, ny = y + dy;
-              if (nx < 0 || ny < 0 || nx >= width || ny >= height) return true;
-              if (!inside.has(ny * width + nx)) return true;
-            }
+        // Edge Extraction
+        const inside = new Set(mask.map(p=>p.y*width+p.x));
+        const edges = mask.filter(({x,y})=>{
+          for (let dy=-1; dy<=1; dy++) for (let dx=-1; dx<=1; dx++) {
+            if (!dx && !dy) continue;
+            const nx=x+dx, ny=y+dy;
+            if (nx<0||ny<0||nx>=width||ny>=height) return true;
+            if (!inside.has(ny*width+nx)) return true;
           }
           return false;
         });
 
-        // radial sampling via edge projection
-        const slices    = 72;
-        const angleStep = 2 * Math.PI / slices;
-        const lengthsPx = new Array(slices).fill(0);
-
-        for (let i = 0; i < slices; i++) {
-          const θ    = i * angleStep;
-          const cosT = Math.cos(θ), sinT = Math.sin(θ);
-          let bestR  = 0;
-
-          for (const p of edges) {
-            const dx = p.x - cx, dy = p.y - cy;
-            const proj = dx * cosT + dy * sinT;
-            if (proj <= 0) continue;
-            const perp = Math.abs(-sinT * dx + cosT * dy);
-            if (perp > Math.tan(angleStep / 2) * proj) continue;
-            if (proj > bestR) bestR = proj;
-          }
-
-          lengthsPx[i] = bestR;
-
-          // draw ray
-          ctx.strokeStyle = '#3b82f6';
-          ctx.lineWidth   = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(cx, cy);
-          ctx.lineTo(cx + bestR * cosT, cy + bestR * sinT);
-          ctx.stroke();
+        // Radial Sampling
+        const slices=72, angleStep=2*Math.PI/slices;
+        const lengthsPx = Array(slices).fill(0);
+        for (let i=0; i<slices; i++){
+          const θ=i*angleStep, c=Math.cos(θ), s=Math.sin(θ);
+          let best=0;
+          edges.forEach(p=>{
+            const dx=p.x-cx, dy=p.y-cy;
+            const proj=dx*c+dy*s;
+            if (proj>0) {
+              const perp=Math.abs(-s*dx + c*dy);
+              if (perp <= Math.tan(angleStep/2)*proj && proj>best) best=proj;
+            }
+          });
+          lengthsPx[i]=best;
+          ctx.strokeStyle='#3b82f6'; ctx.lineWidth=1.5;
+          ctx.beginPath(); ctx.moveTo(cx,cy);
+          ctx.lineTo(cx+best*c, cy+best*s); ctx.stroke();
         }
 
-        // update radius list
+        // Update Radius List
         listEl.innerHTML = '';
-        lengthsPx.forEach((px, i) => {
-          const mm = (px * pxToMm).toFixed(1);
-          const li = document.createElement('li');
+        lengthsPx.forEach((px,i)=>{
+          const mm=(px*pxToMm).toFixed(1);
+          const li=document.createElement('li');
           li.textContent = `#${i+1}: ${px.toFixed(2)} px (${mm} mm)`;
           listEl.appendChild(li);
         });
 
-        // compute and display mask area
-        const areaMm2 = mask.length * pxToMm2;
-        document.getElementById('maskArea').textContent = `${areaMm2.toFixed(2)} mm²`;
+        // Mask Area
+        document.getElementById('maskArea').textContent = `${(mask.length*pxToMm2).toFixed(2)} mm²`;
 
-        // draw chart & summary
+        // Draw Chart & Update Summary
         drawChart(lengthsPx);
-
       } catch (err) {
         alert(err.message);
       } finally {
@@ -275,39 +244,154 @@
 
     function drawChart(lengthsPx) {
       const lengthsMm = lengthsPx.map(r => r * pxToMm);
+
+      // Compute min & max for padding
+      const minVal = Math.min(...lengthsMm);
+      const maxVal = Math.max(...lengthsMm);
+      const padding = (maxVal - minVal) * 0.1;      // 10% of the range
+      const suggestedMin = Math.max(0, minVal - padding);
+
+      // Compute diffs for threshold (optional)
+      const diffs = [];
+      for (let i = 1; i < lengthsMm.length; i++) diffs.push(Math.abs(lengthsMm[i] - lengthsMm[i - 1]));
+      const mean = diffs.reduce((a, b) => a + b, 0) / diffs.length;
+      const std = Math.sqrt(diffs.map(d => (d - mean) ** 2).reduce((a, b) => a + b, 0) / diffs.length);
+
+      // 1) Find all local maxima and minima
       const maxima = [], minima = [];
-      lengthsMm.forEach((v, i) => {
-        if (i > 0 && i < lengthsMm.length - 1) {
-          if (v > lengthsMm[i-1] && v > lengthsMm[i+1]) maxima.push({ x: i+1, y: v });
-          if (v < lengthsMm[i-1] && v < lengthsMm[i+1]) minima.push({ x: i+1, y: v });
-        }
-      });
+      for (let i = 1; i < lengthsMm.length - 1; i++) {
+        const v = lengthsMm[i];
+        if (v > lengthsMm[i - 1] && v > lengthsMm[i + 1]) maxima.push({ x: i + 1, y: v });
+        if (v < lengthsMm[i - 1] && v < lengthsMm[i + 1]) minima.push({ x: i + 1, y: v });
+      }
+
+      // 2) Pair each maxima with its nearest minima before & after
+      const spikeCandidates = maxima.map(spike => {
+        const idx = spike.x;
+        const prevMin = minima.filter(m => m.x < idx).pop();
+        const nextMin = minima.find(m => m.x > idx);
+        return { spike, prevMin, nextMin };
+      }).filter(obj => obj.prevMin && obj.nextMin);
+
+      // 3) Compute total prominence and filter by >4 mm
+      const sharpMaxima = spikeCandidates
+        .filter(({ spike, prevMin, nextMin }) => {
+          const prominence = (spike.y - prevMin.y) + (spike.y - nextMin.y);
+          const diffPrev = spike.y - prevMin.y;
+          const diffNext = spike.y - nextMin.y;
+          return diffPrev > 1 && diffNext > 1;
+        })
+        .map(obj => obj.spike);
+
       const totalExt = maxima.length + minima.length;
 
+      // Chart drawing
       const ctx2 = document.getElementById('radiusChart').getContext('2d');
+      const grad = ctx2.createLinearGradient(0, 0, 0, 300);
+      grad.addColorStop(0, '#3b82f6');
+      grad.addColorStop(1, '#93c5fd');
+
       if (radiusChart) radiusChart.destroy();
       radiusChart = new Chart(ctx2, {
         type: 'line',
         data: {
-          labels: lengthsMm.map((_, i) => i+1),
+          labels: lengthsMm.map((_, i) => i + 1),
           datasets: [
-            { label: 'Radius (mm)', data: lengthsMm, borderColor: '#3b82f6', borderWidth: 2, fill: false, tension: 0.4, pointRadius: 0 },
-            { label: 'Maxima',   data: maxima,   type: 'scatter', pointBackgroundColor: '#10b981', pointRadius: 5 },
-            { label: 'Minima',   data: minima,   type: 'scatter', pointBackgroundColor: '#f59e0b', pointRadius: 5 }
+            {
+              label: 'Radius (mm)',
+              data: lengthsMm,
+              borderColor: grad,
+              borderWidth: 3,
+              pointRadius: 0,
+              fill: false,
+              tension: 0.3
+            },
+            {
+              label: 'Local Maxima',
+              type: 'scatter',
+              data: maxima,
+              pointBackgroundColor: '#10b981',
+              pointBorderColor: '#047857',
+              pointBorderWidth: 2,
+              pointStyle: 'circle',
+              pointRadius: 8,
+              showLine: false
+            },
+            {
+              label: 'Spike Maxima (prominence > 4 mm)',
+              type: 'scatter',
+              data: sharpMaxima,
+              pointBackgroundColor: '#ef4444',
+              pointBorderColor: '#991b1b',
+              pointBorderWidth: 2,
+              pointStyle: 'triangle',
+              rotation: 0,
+              pointRadius: 10,
+              showLine: false
+            },
+            {
+              label: 'Local Minima',
+              type: 'scatter',
+              data: minima,
+              pointBackgroundColor: '#fbbf24',
+              pointBorderColor: '#a16207',
+              pointBorderWidth: 2,
+              pointStyle: 'star',
+              pointRadius: 8,
+              showLine: false
+            }
           ]
         },
         options: {
           responsive: true,
-          plugins: { legend: { position: 'top' } },
+          maintainAspectRatio: false,
           scales: {
-            x: { title: { display: true, text: 'Slice' } },
-            y: { title: { display: true, text: 'Millimeters (mm)' } }
+            x: {
+              title: { display: true, text: 'Slice Number' },
+              grid: { color: '#e5e7eb' }
+            },
+            y: {
+              beginAtZero: false,
+              suggestedMin: suggestedMin,
+              suggestedMax: maxVal * 1.1,
+              title: { display: true, text: 'Radius (mm)' },
+              grid: { color: '#e5e7eb' },
+              ticks: { stepSize: 1 }
+            }
+          },
+          plugins: {
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: ctx => `Slice ${ctx.parsed.x}: ${ctx.parsed.y.toFixed(2)} mm`
+              }
+            },
+            annotation: {
+              annotations: {
+                meanLine: {
+                  type: 'line',
+                  yMin: mean,
+                  yMax: mean,
+                  borderColor: '#6b7280',
+                  borderDash: [6, 4],
+                  label: {
+                    enabled: true,
+                    content: `Mean Δ: ${mean.toFixed(2)} mm`,
+                    position: 'start',
+                    backgroundColor: '#6b7280',
+                    color: '#fff'
+                  }
+                }
+              }
+            }
           }
         }
       });
 
-      document.getElementById('maximaCount').textContent  = maxima.length;
-      document.getElementById('minimaCount').textContent  = minima.length;
+      // Update Summary Boxes
+      document.getElementById('maximaCount').textContent = maxima.length;
+      document.getElementById('sharpCount').textContent = sharpMaxima.length;
+      document.getElementById('minimaCount').textContent = minima.length;
       document.getElementById('totalExtrema').textContent = totalExt;
     }
   </script>
